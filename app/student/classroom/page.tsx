@@ -71,7 +71,7 @@ export default function StudentDashboard() {
 
 function QuizOverlay() {
     const room = useRoomContext();
-    const [quiz, setQuiz] = useState<any>(null);
+    const [quiz, setQuiz] = useState<{ question: string; options: string[] } | null>(null);
 
     useEffect(() => {
         if (!room) return;

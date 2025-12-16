@@ -4,6 +4,7 @@ import { useUser, UserButton } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { LiveKitRoom, VideoConference, useRoomContext } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { RoomEvent, DataPacket_Kind, Room, RemoteParticipant } from "livekit-client";
 import { Loader2, Mic, Video, Users, Activity, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -169,7 +170,7 @@ function VoiceCommandManager() {
         };
     }, [room, room?.state]);
 
-    const triggerQuiz = async (room: any) => {
+    const triggerQuiz = async (room: Room | undefined) => {
         if (!room) return;
         const encoder = new TextEncoder();
         const data = encoder.encode(JSON.stringify({
@@ -210,7 +211,7 @@ function RoomEventsAdapter() {
     useEffect(() => {
         if (!room) return;
 
-        const handleData = (payload: Uint8Array, participant?: any) => {
+        const handleData = (payload: Uint8Array, participant?: RemoteParticipant) => {
             const decoder = new TextDecoder();
             const str = decoder.decode(payload);
             try {
