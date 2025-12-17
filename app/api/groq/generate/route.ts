@@ -1,19 +1,18 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Groq } from "groq-sdk";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     try {
         const { topic } = await req.json();
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.GROQ_API_KEY;
 
         if (!apiKey) {
-            return NextResponse.json({ error: "Missing Gemini API Key" }, { status: 500 });
+            return NextResponse.json({ error: "Missing Groq API Key" }, { status: 500 });
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const groq = new Groq({ apiKey });
 
-        // Prompt engineering for specific JSON format
+        // Prompt engineering for JSON
         const prompt = `Generate a single multiple-choice question about "${topic}" for a classroom quiz. 
     Return strictly valid JSON with no markdown formatting.
     Format:
@@ -24,18 +23,22 @@ export async function POST(req: Request) {
       "explanation": "Brief explanation"
     }`;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const completion = await groq.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "llama3-8b-8192", // Fast & Good
+            temperature: 0.5,
+        });
 
-        // Clean up if model returns markdown code blocks
+        const text = completion.choices[0]?.message?.content || "";
+
+        // Clean up if model returns markdown
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
         const data = JSON.parse(cleanJson);
 
         return NextResponse.json(data);
     } catch (error) {
-        console.error("Gemini Error:", error);
+        console.error("Groq Error:", error);
         return NextResponse.json({ error: "AI Generation Failed" }, { status: 500 });
     }
 }

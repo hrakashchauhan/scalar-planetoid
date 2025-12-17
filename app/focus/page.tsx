@@ -133,7 +133,7 @@ export default function FocusTrackerPage() {
         if (!aiTopicInput) return;
         setIsGenerating(true);
         try {
-            const res = await fetch('/api/gemini/generate', {
+            const res = await fetch('/api/groq/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ topic: aiTopicInput })

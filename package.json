@@ -16,6 +16,7 @@
     "@livekit/components-styles": "^1.2.0",
     "@supabase/supabase-js": "^2.88.0",
     "clsx": "^2.1.1",
+    "groq-sdk": "^0.37.0",
     "livekit-client": "^2.16.1",
     "livekit-server-sdk": "^2.15.0",
     "lucide-react": "^0.561.0",
