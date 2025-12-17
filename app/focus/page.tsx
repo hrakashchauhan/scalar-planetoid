@@ -31,6 +31,13 @@ import {
     Video,
     VideoOff
 } from 'lucide-react';
+import { DeviceCheckModal } from "@/components/ui/device-check-modal";
+import { FaceCalibration } from "@/components/ui/face-calibration";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { SessionTimer } from "@/components/ui/session-timer";
+import { VoiceStatus } from "@/components/ui/voice-status";
+import { cn } from "@/lib/utils";
 
 // --- CONFIGURATION ---
 const DEFAULT_TOPICS = [
@@ -62,6 +69,9 @@ export default function FocusTrackerPage() {
     // AI State
     const [aiTopicInput, setAiTopicInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // New Air Lock State
+    const [stream, setStream] = useState<MediaStream | null>(null);
 
     // --- HELPERS ---
 
@@ -161,30 +171,31 @@ export default function FocusTrackerPage() {
 
     // LANDING
     const renderLanding = () => (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-            <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border border-white/20">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8FAFC] p-6">
+            <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border border-slate-100">
                 <div className="mb-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20">
                         <Eye className="text-white" size={40} />
                     </div>
-                    <h1 className="text-4xl font-black text-white mb-2">LectureSense</h1>
-                    <p className="text-purple-200">50-Student Real-Time Proctoring</p>
+                    <h1 className="text-4xl font-extrabold text-slate-900 mb-2">FocusAI</h1>
+                    <p className="text-slate-500">Select your role to begin.</p>
                 </div>
 
                 <div className="space-y-4">
-                    <button
-                        onClick={() => setView('teacher-setup')}
-                        className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-purple-500/25">
-                        <Monitor size={22} />
-                        Start as Teacher
-                    </button>
+                    <Button
+                        onClick={() => { setRole('teacher'); setView('device-check'); }}
+                        className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20">
+                        <Monitor size={22} className="mr-3" />
+                        I am a Teacher
+                    </Button>
 
-                    <button
-                        onClick={() => setView('student-login')}
-                        className="w-full flex items-center justify-center gap-3 bg-white/10 backdrop-blur border border-white/20 hover:bg-white/20 text-white py-4 rounded-2xl font-bold transition-all">
-                        <Smartphone size={22} />
-                        Join as Student
-                    </button>
+                    <Button
+                        onClick={() => { setRole('student'); setView('device-check'); }}
+                        variant="outline"
+                        className="w-full h-14 text-lg border-slate-200 text-slate-700 hover:bg-slate-50">
+                        <Smartphone size={22} className="mr-3" />
+                        I am a Student
+                    </Button>
                 </div>
             </div>
         </div>
@@ -192,60 +203,44 @@ export default function FocusTrackerPage() {
 
     // TEACHER SETUP
     const renderTeacherSetup = () => (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-            <div className="max-w-2xl mx-auto">
-                <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-                    <div className="p-6 bg-gradient-to-r from-purple-600 to-blue-600 flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-white">Classroom Setup</h2>
-                        <button onClick={() => setView('landing')} className="text-white/70 hover:text-white">Cancel</button>
+        <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+            <div className="max-w-2xl w-full">
+                <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+                    <div className="p-6 bg-indigo-600 flex justify-between items-center text-white">
+                        <h2 className="text-xl font-bold">Classroom Setup</h2>
+                        <Button variant="ghost" onClick={() => setView('landing')} className="text-white hover:text-white/80 hover:bg-indigo-700">Cancel</Button>
                     </div>
-
-                    <div className="p-6 space-y-6">
-                        {/* AI Input */}
-                        <div className="border border-purple-500/30 p-6 rounded-2xl bg-purple-500/10 space-y-4">
-                            <h3 className="text-lg font-bold text-purple-300 flex items-center gap-2">
-                                <Sparkles size={20} className="text-purple-400" />
+                    <div className="p-8 space-y-6">
+                        {/* AI Input Section */}
+                        <div className="p-6 rounded-2xl bg-indigo-50 border border-indigo-100 space-y-4">
+                            <h3 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
+                                <Sparkles size={20} className="text-indigo-600" />
                                 AI Question Generator
                             </h3>
                             <div className="flex gap-2">
                                 <input
-                                    className="flex-1 bg-white/10 border border-white/20 rounded-xl p-3 text-white placeholder-white/50 outline-none focus:border-purple-500"
+                                    className="flex-1 bg-white border border-indigo-200 rounded-xl p-3 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
                                     placeholder="Enter topic (e.g. React Hooks)"
                                     value={aiTopicInput}
                                     onChange={e => setAiTopicInput(e.target.value)}
                                     disabled={isGenerating}
                                 />
-                                <button
+                                <Button
                                     onClick={handleGenerateQuestion}
                                     disabled={isGenerating || !aiTopicInput}
-                                    className="bg-purple-600 px-4 rounded-xl font-bold text-white disabled:opacity-50 flex items-center gap-2">
+                                    className="bg-indigo-600">
                                     {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles size={16} />}
                                     Generate
-                                </button>
+                                </Button>
                             </div>
                         </div>
-
-                        {/* Review Topics */}
-                        <div className="border border-purple-500/30 p-6 rounded-2xl bg-purple-500/10 space-y-4">
-                            <h3 className="text-lg font-bold text-purple-300 flex items-center gap-2">
-                                <Sparkles size={20} className="text-purple-400" />
-                                Review Topics
-                            </h3>
-                            <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {topics.map((t, idx) => (
-                                    <div key={t.id} className="text-sm text-white/80 border-b border-white/10 pb-2">
-                                        {idx + 1}. {t.name} (Q: {t.question})
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <button
+                        <Button
                             onClick={handleStartSession}
-                            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-500/25 transition-all">
-                            <Video size={20} />
-                            Go Live (Video & Audio)
-                        </button>
+                            size="lg"
+                            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-14 text-lg shadow-lg shadow-emerald-500/20">
+                            <Video size={24} className="mr-2" />
+                            Go Live
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -254,36 +249,35 @@ export default function FocusTrackerPage() {
 
     // STUDENT LOGIN
     const renderStudentLogin = () => (
-        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-slate-900 flex items-center justify-center p-6">
-            <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-white/20">
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">Join Class</h2>
+        <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+            <div className="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full border border-slate-200">
+                <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Join Class</h2>
                 <form onSubmit={handleJoinSession} className="space-y-4">
                     <input
                         required
-                        className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-white placeholder-white/50 outline-none focus:border-purple-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500"
                         placeholder="Your Name"
                         value={name}
                         onChange={e => setName(e.target.value)}
                     />
                     <input
                         required
-                        className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-white placeholder-white/50 outline-none focus:border-purple-500"
-                        placeholder="Roll Number"
-                        value={roll}
-                        onChange={e => setRoll(e.target.value)}
+                        readOnly
+                        className="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-slate-500 outline-none cursor-not-allowed"
+                        value={roll || "Processing..."}
                     />
                     <input
                         required
-                        className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-white placeholder-white/50 outline-none focus:border-purple-500 uppercase tracking-widest font-mono text-center text-xl"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500 uppercase tracking-widest font-mono text-center text-xl"
                         placeholder="CODE"
                         value={sessionCode}
                         onChange={e => setSessionCode(e.target.value.toUpperCase())}
                     />
-                    <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 rounded-2xl hover:from-purple-500 hover:to-blue-500 transition shadow-lg shadow-purple-500/25">
+                    <Button type="submit" className="w-full h-12 text-lg bg-indigo-600 hover:bg-indigo-700">
                         Join with Video
-                    </button>
+                    </Button>
                 </form>
-                <button onClick={() => setView('landing')} className="mt-4 w-full text-sm text-purple-300 hover:text-white">Cancel</button>
+                <Button variant="ghost" onClick={() => setView('landing')} className="mt-4 w-full">Cancel</Button>
             </div>
         </div>
     );
@@ -358,6 +352,28 @@ export default function FocusTrackerPage() {
         case 'teacher-report': return renderTeacherReport();
         case 'student-login': return renderStudentLogin();
         case 'student-live': return renderStudentLive();
+        case 'device-check': return (
+            <DeviceCheckModal
+                role={role as 'teacher' | 'student'}
+                onComplete={(s) => {
+                    setStream(s);
+                    if (role === 'student') {
+                        setView('face-calibration');
+                    } else {
+                        setView('teacher-setup');
+                    }
+                }}
+            />
+        );
+        case 'face-calibration': return (
+            <FaceCalibration
+                stream={stream!}
+                onVerified={(r) => {
+                    setRoll(r);
+                    setView('student-login');
+                }}
+            />
+        );
         default: return renderLanding();
     }
 }
@@ -419,69 +435,133 @@ function TeacherRoomInner({ sessionCode, topics, setTopics, onEndSession }: any)
     };
 
     return (
-        <div className="flex h-full text-white">
-            {/* Sidebar */}
-            <div className="w-80 bg-slate-900 border-r border-slate-700 flex flex-col">
-                <div className="p-4 border-b border-slate-700">
-                    <div className="bg-purple-600/20 text-purple-200 p-3 rounded-xl border border-purple-600/30 text-center">
-                        <p className="text-xs uppercase font-bold">Code</p>
-                        <p className="text-3xl font-black">{sessionCode}</p>
-                        <button
-                            onClick={() => {
-                                const url = `${window.location.origin}/focus?code=${sessionCode}`;
-                                navigator.clipboard.writeText(url);
-                                alert("Link Copied!");
-                            }}
-                            className="mt-2 text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-full font-bold transition-all w-full">
-                            Copy Join Link
-                        </button>
+        <div className="flex flex-col h-full bg-slate-950 text-white overflow-hidden font-sans">
+            {/* TOP BAR / HEADER */}
+            <div className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 shrink-0 z-50">
+                <div className="flex items-center gap-3">
+                    <div className="bg-indigo-600 p-2 rounded-lg">
+                        <Monitor size={20} className="text-white" />
+                    </div>
+                    <span className="font-bold text-lg tracking-tight">LectureSense <span className="text-indigo-400">Cockpit</span></span>
+                </div>
+
+                <div className="absolute left-1/2 -translate-x-1/2">
+                    <SessionTimer />
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <VoiceStatus isListening={isListening} onClick={startListening} />
+                    <Button variant="destructive" onClick={onEndSession} className="h-9 text-sm">
+                        End Class
+                    </Button>
+                </div>
+            </div>
+
+            {/* MAIN GRID */}
+            <div className="flex-1 grid grid-cols-[280px_1fr_320px] overflow-hidden">
+
+                {/* COL 1: MISSION CONTROL (LEFT) */}
+                <div className="bg-slate-925 border-r border-slate-800 flex flex-col overflow-y-auto">
+                    <div className="p-4 space-y-4">
+                        {/* Session Code */}
+                        <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                            <p className="text-xs font-bold text-slate-500 uppercase mb-1">Session Code</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-3xl font-black text-white tracking-widest">{sessionCode}</span>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/focus?code=${sessionCode}`);
+                                        alert("Link Copied!");
+                                    }}
+                                    className="h-8 w-8 p-0 text-slate-400 hover:text-white">
+                                    <FileText size={16} />
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Topics List */}
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase px-1">Lesson Plan</h3>
+                            {topics.map((t: any) => (
+                                <div key={t.id} className={`group p-3 rounded-xl border transition-all ${t.completed ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-slate-800 bg-slate-900/40 hover:border-indigo-500/30'}`}>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <p className="text-sm font-bold text-slate-200">{t.name}</p>
+                                        {t.completed && <CheckCircle size={14} className="text-emerald-500" />}
+                                    </div>
+                                    <p className="text-xs text-slate-500 mb-3 line-clamp-2">{t.question}</p>
+
+                                    {!t.completed && (
+                                        <Button
+                                            onClick={() => triggerQuestion(t.id)}
+                                            size="sm"
+                                            className="w-full h-8 text-xs bg-indigo-600 hover:bg-indigo-500 transition-colors">
+                                            Broadcast Question
+                                        </Button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                    <div className="space-y-2">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase">Topics</h3>
-                        {topics.map((t: any) => (
-                            <div key={t.id} className={`p-3 rounded-lg border ${t.completed ? 'border-green-500/30 bg-green-900/20' : 'border-slate-700 bg-slate-800'}`}>
-                                <p className="text-sm font-bold">{t.name}</p>
-                                <p className="text-xs text-slate-400 mb-2 truncate">{t.question}</p>
-                                {!t.completed && (
-                                    <button
-                                        onClick={() => triggerQuestion(t.id)}
-                                        className="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs py-2 rounded font-bold">
-                                        Ask Now
-                                    </button>
-                                )}
-                                {t.completed && <p className="text-xs text-green-400 font-mono">Completed</p>}
+                {/* COL 2: STAGE (CENTER) */}
+                <div className="bg-black relative flex flex-col">
+                    <div className="flex-1 p-2">
+                        {/* LiveKit Grids */}
+                        <VideoConference />
+                    </div>
+                    {/* Floating Controls */}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-full px-6 py-2 shadow-2xl">
+                        <div className="flex items-center gap-4">
+                            <div className="w-px h-8 bg-slate-700 mx-2" />
+                            <ControlBar variation="minimal" />
+                            <RoomAudioRenderer />
+                        </div>
+                    </div>
+                </div>
+
+                {/* COL 3: CO-PILOT (RIGHT) */}
+                <div className="bg-slate-925 border-l border-slate-800 flex flex-col text-slate-300">
+                    <div className="p-4 border-b border-slate-800 bg-slate-900/30">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Sparkles size={16} className="text-purple-400" />
+                            <h3 className="font-bold text-slate-200">Co-Pilot Stream</h3>
+                        </div>
+                        <p className="text-xs text-slate-500">Real-time engagement insights</p>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-xs">
+                        {logs.length === 0 && (
+                            <div className="text-center text-slate-600 italic mt-10">
+                                Waiting for class activity...
+                            </div>
+                        )}
+                        {logs.map((l, i) => (
+                            <div key={i} className="flex gap-3 animate-in slide-in-from-right-2 duration-300">
+                                <span className="text-slate-600 shrink-0">{l.time}</span>
+                                <div>
+                                    <span className={cn("font-bold", l.user === 'Teacher' ? 'text-indigo-400' : 'text-slate-200')}>{l.user}</span>
+                                    <span className="text-slate-400"> {l.action}</span>
+                                </div>
                             </div>
                         ))}
                     </div>
 
-                    <button
-                        onClick={startListening}
-                        className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 ${isListening ? 'bg-red-500 animate-pulse' : 'bg-slate-700 hover:bg-slate-600'}`}>
-                        {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                        {isListening ? "Listening..." : "Enable Voice Command"}
-                    </button>
-
-                    <div className="bg-black p-2 rounded text-xs font-mono h-32 overflow-y-auto text-green-400">
-                        {logs.map((l, i) => <div key={i}>[{l.time}] {l.action}</div>)}
+                    {/* Quick Stats (Placeholder) */}
+                    <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-slate-800 p-2 rounded-lg text-center border border-slate-700">
+                                <span className="block text-2xl font-bold text-emerald-400">{logs.filter(l => l.user !== 'Teacher').length}</span>
+                                <span className="text-[10px] uppercase text-slate-500 font-bold">Interactions</span>
+                            </div>
+                            <div className="bg-slate-800 p-2 rounded-lg text-center border border-slate-700">
+                                <span className="block text-2xl font-bold text-indigo-400">100%</span>
+                                <span className="text-[10px] uppercase text-slate-500 font-bold">Focus Score</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div className="p-4 border-t border-slate-700">
-                    <button onClick={onEndSession} className="w-full bg-red-600 hover:bg-red-500 py-3 rounded-lg font-bold">End Class</button>
-                </div>
-            </div>
-
-            {/* Main Video Grid */}
-            <div className="flex-1 bg-slate-950 relative flex flex-col">
-                <div className="flex-1 p-4">
-                    <VideoConference />
-                </div>
-                <div className="h-16 bg-slate-900/50 backdrop-blur border-t border-slate-700 flex items-center justify-center p-2">
-                    <ControlBar variation="minimal" />
-                    <RoomAudioRenderer />
                 </div>
             </div>
 
@@ -497,6 +577,8 @@ function StudentRoomInner({ name, roll, sessionCode, onLeave }: any) {
     const [quiz, setQuiz] = useState<any>(null);
     const [answer, setAnswer] = useState('');
     const [feedback, setFeedback] = useState<any>(null);
+    const [isFocused, setIsFocused] = useState(true);
+    const [handRaised, setHandRaised] = useState(false);
 
     // 1. Listen for Quizzes
     useEffect(() => {
@@ -520,6 +602,8 @@ function StudentRoomInner({ name, roll, sessionCode, onLeave }: any) {
     useEffect(() => {
         const handleVisChange = () => {
             const isHidden = document.hidden;
+            setIsFocused(!isHidden);
+
             // Send to Teacher
             if (room) {
                 const payload = JSON.stringify({
@@ -561,51 +645,104 @@ function StudentRoomInner({ name, roll, sessionCode, onLeave }: any) {
         setTimeout(() => setQuiz(null), 3000); // Close after 3s
     };
 
+    const toggleHand = async () => {
+        setHandRaised(!handRaised);
+        if (room) {
+            // Notify teacher (mock data packet)
+            const payload = JSON.stringify({
+                type: 'HAND_RAISE',
+                user: name,
+                status: !handRaised
+            });
+            await room.localParticipant.publishData(new TextEncoder().encode(payload), { reliable: true });
+        }
+    };
+
     return (
-        <div className="flex flex-col h-full bg-slate-950 relative">
-            <div className="flex-1 p-4">
+        <div className="flex flex-col h-full bg-black relative overflow-hidden group">
+
+            {/* Focus Guardian Overlay - Only visible when NOT focused (simulated by checking isFocused state for UI purposes, though typically this overlay wouldn't be seen if tab is hidden. We use it for 'returning' state or partial overlay if supported) 
+                Actually, since visibility API hides the page content, we can show a 'Welcome Back' or warning if they were away. 
+                For now, let's use it for 'Active Focus' indicator.
+            */}
+            {!isFocused && (
+                <div className="absolute inset-0 z-[60] bg-orange-500/10 border-[10px] border-orange-500/50 pointer-events-none animate-pulse flex items-center justify-center">
+                    <div className="bg-orange-500 text-white px-6 py-3 rounded-full font-bold shadow-2xl">
+                        ⚠️ Distraction Detected
+                    </div>
+                </div>
+            )}
+
+            {/* Video Stage */}
+            <div className="flex-1 relative">
                 <VideoConference />
             </div>
-            <div className="h-16 bg-slate-900 border-t border-slate-700 flex items-center justify-between px-6">
-                <div className="text-white font-bold">{name} ({roll})</div>
-                <ControlBar variation="minimal" />
-                <button onClick={onLeave} className="bg-red-500/20 text-red-500 px-4 py-2 rounded font-bold">Leave</button>
+
+            {/* Immersive Floating Controls */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/80 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl transition-all opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
+                <div className="flex items-center gap-3 px-4 py-2 border-r border-white/10">
+                    <div className="bg-emerald-500 h-2 w-2 rounded-full animate-pulse" />
+                    <span className="text-white font-bold text-sm tracking-wide">{name}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={toggleHand}
+                        variant={handRaised ? "default" : "secondary"}
+                        className={cn("h-10 w-10 p-0 rounded-xl transition-all", handRaised ? "bg-yellow-500 hover:bg-yellow-600 text-black" : "bg-white/10 hover:bg-white/20 text-white")}
+                    >
+                        <span className="text-lg">✋</span>
+                    </Button>
+
+                    <ControlBar variation="minimal" />
+
+                    <Button variant="destructive" onClick={onLeave} className="h-10 px-4 rounded-xl">
+                        Leave Class
+                    </Button>
+                </div>
             </div>
+
             <RoomAudioRenderer />
 
-            {/* Quiz Overlay */}
+            {/* Quiz Overlay (Immersive) */}
             {quiz && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur">
-                    <div className="bg-slate-800 p-8 rounded-2xl w-full max-w-md text-center border border-purple-500 shadow-2xl">
-                        <h3 className="text-2xl font-bold text-white mb-4">Quick Check!</h3>
-                        <p className="text-lg text-purple-200 mb-6">{quiz.question}</p>
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4">
+                    <div className="bg-slate-900 p-8 rounded-3xl w-full max-w-lg text-center border border-indigo-500/50 shadow-2xl shadow-indigo-500/20 transform transition-all scale-100">
+                        <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-indigo-500/20 mb-6">
+                            <Sparkles size={32} className="text-indigo-400" />
+                        </div>
+                        <h3 className="text-3xl font-black text-white mb-4">Pop Quiz!</h3>
+                        <p className="text-xl text-indigo-200 mb-8 leading-relaxed">{quiz.question}</p>
 
                         {!feedback && (
-                            <>
+                            <div className="space-y-4">
                                 <input
                                     autoFocus
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white text-lg mb-4"
-                                    placeholder="Type answer..."
+                                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl p-5 text-white text-xl placeholder-slate-600 outline-none focus:ring-4 focus:ring-indigo-500/50 transition-all font-medium text-center"
+                                    placeholder="Type your answer..."
                                     value={answer}
                                     onChange={e => setAnswer(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && submitAnswer()}
                                 />
-                                <button onClick={submitAnswer} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl">
-                                    Submit
-                                </button>
-                            </>
+                                <Button onClick={submitAnswer} size="lg" className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-500 font-bold rounded-2xl shadow-lg shadow-indigo-600/25">
+                                    Submit Answer
+                                </Button>
+                            </div>
                         )}
 
                         {feedback !== null && (
-                            <div className="animate-in zoom-in">
+                            <div className="animate-in zoom-in duration-300">
                                 {feedback ? (
-                                    <div className="text-green-500 flex flex-col items-center">
-                                        <CheckCircle size={64} />
-                                        <p className="text-xl font-bold mt-2">Correct!</p>
+                                    <div className="flex flex-col items-center p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                                        <CheckCircle size={64} className="text-emerald-500 mb-4" />
+                                        <p className="text-2xl font-bold text-emerald-400">Correct!</p>
+                                        <p className="text-emerald-200/60 text-sm mt-2">Nice focus!</p>
                                     </div>
                                 ) : (
-                                    <div className="text-red-500 flex flex-col items-center">
-                                        <XCircle size={64} />
-                                        <p className="text-xl font-bold mt-2">Incorrect!</p>
+                                    <div className="flex flex-col items-center p-6 bg-red-500/10 rounded-2xl border border-red-500/20">
+                                        <XCircle size={64} className="text-red-500 mb-4" />
+                                        <p className="text-2xl font-bold text-red-400">Not quite.</p>
+                                        <p className="text-red-200/60 text-sm mt-2">The answer was: <span className="font-mono">{quiz.answer}</span></p>
                                     </div>
                                 )}
                             </div>
