@@ -18,9 +18,11 @@ type StudentSummary = {
     lastActive: string;
 };
 
-export default function ReportPage({ params }: { params: { sessionCode: string } }) {
-    // In a real app we use params.sessionCode. For demo we default to math-101
-    const sessionCode = "math-101";
+import { useSearchParams } from 'next/navigation';
+
+export default function ReportPage() {
+    const searchParams = useSearchParams();
+    const sessionCode = searchParams.get('code') || "math-101";
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<StudentSummary[]>([]);
 
