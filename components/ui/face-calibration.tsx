@@ -54,7 +54,7 @@ export function FaceCalibration({ onVerified, stream }: FaceCalibrationProps) {
             if (!videoRef.current || !canvasRef.current || loading) return;
 
             interval = setInterval(async () => {
-                if (videoRef.current?.paused || videoRef.current?.ended) return;
+                if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) return;
 
                 const options = new faceapi.TinyFaceDetectorOptions();
                 const detections = await faceapi.detectAllFaces(videoRef.current, options).withFaceLandmarks();
